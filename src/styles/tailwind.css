@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom NITP color palette */
+:root {
+  --nitp-green: #006400;
+  --nitp-gold: #ffd700;
+}
