@@ -1,13 +1,13 @@
-// src/router.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
+// Common Components
 import Header from "./components/common/Header";
 import Footer from "./components/common/Footer";
 import ScrollToTop from "./components/common/ScrollToTop";
 
-// Pages
+// Public Pages
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import OurWorkPage from "./pages/OurWorkPage";
@@ -20,15 +20,26 @@ import ProjectsPage from "./pages/ProjectsPage";
 import PartnersPage from "./pages/PartnersPage";
 import ContactPage from "./pages/ContactPage";
 
-// Auth pages
+// Auth Pages
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 
-// Dashboards
+// Member Dashboard
 import MemberDashboard from "./pages/MemberDashboard";
-import AdminDashboard from "./pages/admin/AdminDashboard";
 
-// Not Found
+// Admin Layout & Pages
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminNews from "./pages/admin/AdminNews";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminProjects from "./pages/admin/AdminProjects";
+import AdminResources from "./pages/admin/AdminResources";
+import AdminGallery from "./pages/admin/AdminGallery";
+import AdminPartners from "./pages/admin/AdminPartners";
+import AdminLogin from "./pages/admin/AdminLogin";
+
+// Misc
 import NotFound from "./pages/NotFound";
 
 // Protected Route Component
@@ -36,18 +47,17 @@ function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, role, loading } = useAuth();
 
   if (loading) return null;
-
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes(role)) return <Navigate to="/" replace />;
 
   return children;
 }
 
-// Layout wrapper with header/footer
+// Public Site Layout (with Header/Footer)
 function Layout({ children }) {
   return (
     <>
-      <ScrollToTop /> 
+      <ScrollToTop />
       <Header />
       <main className="min-h-[80vh]">{children}</main>
       <Footer />
@@ -55,6 +65,7 @@ function Layout({ children }) {
   );
 }
 
+// Main Router
 export default function AppRouter() {
   const publicRoutes = [
     { path: "/", element: <HomePage /> },
@@ -72,16 +83,16 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public Routes */}
       {publicRoutes.map(({ path, element }) => (
         <Route key={path} path={path} element={<Layout>{element}</Layout>} />
       ))}
 
-      {/* Auth routes */}
+      {/* Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Dashboards */}
+      {/* Member Dashboard */}
       <Route
         path="/member-dashboard"
         element={
@@ -92,18 +103,29 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
+
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+
       <Route
-        path="/admin-dashboard"
+        path="/admin"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <Layout>
-              <AdminDashboard />
-            </Layout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="news" element={<AdminNews />} />
+        <Route path="events" element={<AdminEvents />} />
+        <Route path="projects" element={<AdminProjects />} />
+        <Route path="resources" element={<AdminResources />} />
+        <Route path="gallery" element={<AdminGallery />} />
+        <Route path="partners" element={<AdminPartners />} />
+      </Route>
 
-      {/* 404 */}
+      {/* 404 Fallback */}
       <Route path="*" element={<Layout><NotFound /></Layout>} />
     </Routes>
   );
