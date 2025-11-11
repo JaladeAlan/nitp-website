@@ -5,27 +5,31 @@ import EventCalendar from "../components/events/EventCalendar";
 
 const EventsPage = () => {
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-bold text-blue-900">Events</h1>
-      <p className="text-gray-700 mb-6">
-        Stay updated on NITP’s upcoming conferences, seminars, and planning events.
-      </p>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Upcoming Events</h2>
-        <EventCalendar />
+    <div className="max-w-6xl mx-auto px-6">
+      {/* Upcoming Events */}
+      <section className="mt-0 mb-10"> 
+        <EventCalendar className="mt-0" /> 
       </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">Past Events</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+      
+      {/* Past Events */}
+      <section className="bg-gray-50 shadow-inner rounded-xl p-8 md:p-12 mb-10">
+        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
+          Past Events
+        </h2>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           <EventCard />
           <EventCard />
           <EventCard />
         </div>
       </section>
 
-      <EventGallery />
+      {/* Event Gallery */}
+      <section className="bg-white shadow-md rounded-xl p-8 md:p-12 mb-16">
+        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
+          Event Gallery
+        </h2>
+        <EventGallery />
+      </section>
     </div>
   );
 };
