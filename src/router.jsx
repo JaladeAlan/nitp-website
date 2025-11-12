@@ -6,6 +6,7 @@ import { useAuth } from "./context/AuthContext";
 import Header from "./components/common/Header";
 import Footer from "./components/common/Footer";
 import ScrollToTop from "./components/common/ScrollToTop";
+import SEOWrapper from "./components/common/SEOWrapper";
 
 // Public Pages
 import HomePage from "./pages/HomePage";
@@ -53,7 +54,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-// Public Site Layout (with Header/Footer)
+// Public Site Layout
 function Layout({ children }) {
   return (
     <>
@@ -68,24 +69,34 @@ function Layout({ children }) {
 // Main Router
 export default function AppRouter() {
   const publicRoutes = [
-    { path: "/", element: <HomePage /> },
-    { path: "/about", element: <AboutPage /> },
-    { path: "/our-work", element: <OurWorkPage /> },
-    { path: "/membership", element: <MembershipPage /> },
-    { path: "/resources", element: <ResourcesPage /> },
-    { path: "/events", element: <EventsPage /> },
-    { path: "/news", element: <NewsPage /> },
-    { path: "/ypf", element: <YPFPage /> },
-    { path: "/projects", element: <ProjectsPage /> },
-    { path: "/partners", element: <PartnersPage /> },
-    { path: "/contact", element: <ContactPage /> },
+    { path: "/", element: <HomePage />, title: "Home - NITP", description: "Welcome to the Nigerian Institute of Technology and Projects" },
+    { path: "/about", element: <AboutPage />, title: "About NITP", description: "Learn more about our mission and vision" },
+    { path: "/our-work", element: <OurWorkPage />, title: "Our Work - NITP", description: "Explore our projects and initiatives" },
+    { path: "/membership", element: <MembershipPage />, title: "Membership - NITP", description: "Join the NITP community" },
+    { path: "/resources", element: <ResourcesPage />, title: "Resources - NITP", description: "Access our resources and tools" },
+    { path: "/events", element: <EventsPage />, title: "Events - NITP", description: "Check out our events and programs" },
+    { path: "/news", element: <NewsPage />, title: "News - NITP", description: "Latest updates and news" },
+    { path: "/ypf", element: <YPFPage />, title: "YPF - NITP", description: "Youth Project Fund information" },
+    { path: "/projects", element: <ProjectsPage />, title: "Projects - NITP", description: "Our ongoing and completed projects" },
+    { path: "/partners", element: <PartnersPage />, title: "Partners - NITP", description: "Meet our partners" },
+    { path: "/contact", element: <ContactPage />, title: "Contact - NITP", description: "Get in touch with us" },
   ];
 
   return (
     <Routes>
       {/* Public Routes */}
-      {publicRoutes.map(({ path, element }) => (
-        <Route key={path} path={path} element={<Layout>{element}</Layout>} />
+      {publicRoutes.map(({ path, element, title, description }) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <Layout>
+              <SEOWrapper title={title} description={description}>
+                {element}
+              </SEOWrapper>
+            </Layout>
+          }
+        />
       ))}
 
       {/* Auth Routes */}
@@ -98,7 +109,9 @@ export default function AppRouter() {
         element={
           <ProtectedRoute allowedRoles={["member"]}>
             <Layout>
-              <MemberDashboard />
+              <SEOWrapper title="Member Dashboard - NITP" description="Access your member dashboard">
+                <MemberDashboard />
+              </SEOWrapper>
             </Layout>
           </ProtectedRoute>
         }
@@ -126,7 +139,16 @@ export default function AppRouter() {
       </Route>
 
       {/* 404 Fallback */}
-      <Route path="*" element={<Layout><NotFound /></Layout>} />
+      <Route
+        path="*"
+        element={
+          <Layout>
+            <SEOWrapper title="Page Not Found - NITP" description="The page you are looking for does not exist">
+              <NotFound />
+            </SEOWrapper>
+          </Layout>
+        }
+      />
     </Routes>
   );
 }

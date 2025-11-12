@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Menu, X, Search } from "lucide-react";
-import logo from "../../assets/nitp-logo.png"; 
+import logo from "../../assets/nitp-logo.png";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,8 +17,6 @@ export default function Header() {
     { name: "Resources", path: "/resources" },
     { name: "Contact", path: "/contact" },
     { name: "News & Media", path: "/news" },
-    // { name: "Projects", path: "/projects" },
-    // { name: "Partners", path: "/partners" },
     { name: "YPF", path: "/ypf" },
   ];
 
@@ -27,24 +25,24 @@ export default function Header() {
     if (searchQuery.trim() !== "") {
       navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
-      setMenuOpen(false); 
+      setMenuOpen(false);
     }
   };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-0 flex items-center px-6 py-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-4 flex-shrink-0 whitespace-nowrap">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        {/* Logo Left */}
+        <Link
+          to="/"
+          className="flex items-center gap-4 flex-shrink-0 whitespace-nowrap"
+        >
           <img src={logo} alt="NITP Logo" className="w-12 h-12 object-contain" />
           <span className="font-bold text-green-800 text-lg md:text-xl">
             NITP Oyo State Chapter
           </span>
         </Link>
-        
-        {/* Spacer */} 
-        <div className="flex-1 mr-10  " />
-        
+
         {/* Desktop Nav + Search */}
         <div className="hidden md:flex items-center gap-6">
           <nav className="flex items-center gap-4 whitespace-nowrap">
@@ -54,7 +52,9 @@ export default function Header() {
                 to={link.path}
                 className={({ isActive }) =>
                   `text-gray-700 hover:text-green-700 font-medium transition ${
-                    isActive ? "text-green-800 border-b-2 border-green-600" : ""
+                    isActive
+                      ? "text-green-800 border-b-2 border-green-600"
+                      : ""
                   }`
                 }
               >
