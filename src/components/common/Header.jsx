@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Menu, X, Search } from "lucide-react";
-import logo from "../../assets/nitp-logo.png";
+import logo from "../../assets/nitp-logo.png"; 
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,34 +17,36 @@ export default function Header() {
     { name: "Resources", path: "/resources" },
     { name: "Contact", path: "/contact" },
     { name: "News & Media", path: "/news" },
+    // { name: "Projects", path: "/projects" },
+    // { name: "Partners", path: "/partners" },
     { name: "YPF", path: "/ypf" },
   ];
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
+    if (searchQuery.trim() !== "") {
       navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
-      setMenuOpen(false);
+      setMenuOpen(false); 
     }
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50 w-full">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 py-4">
+    <header className="bg-white shadow-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-0 flex items-center px-6 py-4">
         {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-3 md:gap-4 flex-shrink-0"
-        >
-          <img src={logo} alt="NITP Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain" />
-          <span className="font-bold text-green-800 text-sm md:text-lg lg:text-xl">
+        <Link to="/" className="flex items-center gap-4 flex-shrink-0 whitespace-nowrap">
+          <img src={logo} alt="NITP Logo" className="w-12 h-12 object-contain" />
+          <span className="font-bold text-green-800 text-lg md:text-xl">
             NITP Oyo State Chapter
           </span>
         </Link>
-
-        {/* Desktop nav + search */}
-        <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
+        
+        {/* Spacer */} 
+        <div className="flex-1 mr-10  " />
+        
+        {/* Desktop Nav + Search */}
+        <div className="hidden md:flex items-center gap-6">
           <nav className="flex items-center gap-4 whitespace-nowrap">
             {links.map((link) => (
               <NavLink
@@ -70,65 +72,63 @@ export default function Header() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-1 w-36 md:w-48 focus:outline-none"
+              className="px-3 py-1 w-48 focus:outline-none"
             />
             <button
               type="submit"
               className="bg-white border-l border-gray-300 px-3 flex items-center justify-center"
             >
-              <Search size={18} color="#000" />
+              <Search size={18} color="#000000" />
             </button>
           </form>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-green-800 ml-2"
+          className="md:hidden text-green-800"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? <X size={26} /> : <Menu size={26} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
-      <div
-        className={`md:hidden bg-white border-t border-gray-200 shadow-inner px-4 py-4 transition-all duration-300 ${
-          menuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-        }`}
-      >
-        <nav className="flex flex-col space-y-2">
-          {links.map((link) => (
-            <NavLink
-              key={link.name}
-              to={link.path}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `block text-gray-700 hover:text-green-700 py-2 ${
-                  isActive ? "text-green-800 font-semibold" : ""
-                }`
-              }
-            >
-              {link.name}
-            </NavLink>
-          ))}
-        </nav>
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-200 shadow-inner px-6 py-4">
+          <nav className="flex flex-col items-start space-y-3">
+            {links.map((link) => (
+              <NavLink
+                key={link.name}
+                to={link.path}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `block w-full text-gray-700 hover:text-green-700 py-2 whitespace-nowrap ${
+                    isActive ? "text-green-800 font-semibold" : ""
+                  }`
+                }
+              >
+                {link.name}
+              </NavLink>
+            ))}
 
-        <form onSubmit={handleSearch} className="flex mt-3 w-full">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="bg-white border-l border-gray-300 px-3 rounded-r-lg flex items-center justify-center"
-          >
-            <Search size={18} color="#000" />
-          </button>
-        </form>
-      </div>
+            <form onSubmit={handleSearch} className="flex mt-3 w-full">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="bg-white border-l border-gray-300 px-3 rounded-r-lg flex items-center justify-center"
+              >
+                <Search size={18} color="#000000" />
+              </button>
+            </form>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
