@@ -1,4 +1,3 @@
-// src/components/common/AnnouncementTicker.jsx
 import { useEffect, useState } from "react";
 
 export default function AnnouncementTicker() {
@@ -17,8 +16,8 @@ export default function AnnouncementTicker() {
   }, [announcements.length]);
 
   return (
-    <div className="bg-green-700 text-white py-2 px-4 overflow-hidden">
-      <div className="animate-slide whitespace-nowrap text-center font-medium">
+    <div className="bg-green-700 text-white py-2 px-4">
+      <div className="font-medium text-center leading-relaxed">
         {announcements[index]}
       </div>
     </div>
