@@ -8,12 +8,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-10">
         {/* About Section */}
         <div className="flex flex-col">
-          <Link to="/" className="flex items-center gap-4 flex-shrink-0 whitespace-nowrap mb-4">
-            <img src={logo} alt="NITP Logo" className="w-12 h-12 object-contain" />
-            <span className="font-bold text-white text-lg md:text-xl">
-              NITP Oyo State Chapter
-            </span>
-          </Link>
+        <Link to="/" className="flex items-center gap-4 flex-shrink-0 mb-4">
+          <img src={logo} alt="NITP Logo" className="w-12 h-12 object-contain" />
+          <span className="font-bold text-white text-lg md:text-xl">
+            NITP Oyo State Chapter
+          </span>
+        </Link>
           <p className="text-gray-300 leading-relaxed">
             Advancing Sustainable Planning and Development in Oyo State through
             professional excellence, collaboration, and advocacy.

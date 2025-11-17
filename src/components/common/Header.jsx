@@ -30,32 +30,29 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-md w-full">
-      {/* Navbar Container */}
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 py-4">
-        {/* Logo and Title */}
+    <header className="sticky top-0 left-0 w-full bg-white shadow-md z-50">
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between gap-6">
+
+        {/* Logo + Title */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-          <img
-            src={logo}
-            alt="NITP Logo"
-            className="w-10 h-10 md:w-12 md:h-12 object-contain"
-          />
-          <span className="font-bold text-green-800 text-base md:text-lg lg:text-xl whitespace-nowrap">
+          <img src={logo} alt="NITP Logo" className="w-10 h-10 lg:w-12 lg:h-12" />
+          <span className="font-bold text-green-800 text-lg lg:text-xl whitespace-nowrap">
             NITP Oyo State Chapter
           </span>
         </Link>
 
         {/* Desktop Navigation + Search */}
-        <div className="hidden md:flex items-center gap-8 ml-10"> 
-          {/* 🔹 Added 'ml-10' to create space between title and navigation */}
-          <nav className="flex items-center gap-4">
+        <div className="hidden lg:flex items-center flex-nowrap min-w-0 ml-2 gap-4">
+
+          {/* NAV LINKS */}
+          <nav className="flex items-center flex-nowrap gap-4 overflow-x-auto scrollbar-hide max-w-[60vw]">
             {links.map((link) => (
               <NavLink
                 key={link.name}
                 to={link.path}
                 className={({ isActive }) =>
-                  `whitespace-nowrap text-gray-700 hover:text-green-700 font-medium transition ${
-                    isActive ? "text-green-800 border-b-2 border-green-600" : ""
+                  `text-gray-700 hover:text-green-700 font-medium whitespace-nowrap transition ${
+                    isActive ? "text-green-800 border-b-2 border-green-700 pb-1" : ""
                   }`
                 }
               >
@@ -64,44 +61,62 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Search Bar */}
+          {/* SEARCH BAR */}
           <form
             onSubmit={handleSearch}
-            className="flex items-center border border-gray-300 rounded-lg overflow-hidden"
+            className="flex items-center border rounded-full overflow-hidden bg-white h-10 min-w-[170px]"
           >
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-1 w-36 md:w-48 focus:outline-none"
+              className="px-3 w-[120px] focus:outline-none"
             />
             <button
               type="submit"
-              className="bg-white border-l border-gray-300 px-3 flex items-center justify-center"
+              className="px-3 border-l bg-white flex items-center justify-center"
             >
-              <Search size={18} color="#000" />
+              <Search size={18} />
             </button>
           </form>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Toggle */}
         <button
-          className="md:hidden text-green-800 ml-2"
+          className="lg:hidden text-green-800"
           onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label="Toggle menu"
         >
           {menuOpen ? <X size={26} /> : <Menu size={26} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Dropdown */}
       <div
-        className={`md:hidden bg-white border-t border-gray-200 shadow-inner overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
-          menuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        className={`lg:hidden overflow-hidden transition-all duration-300 bg-white shadow-inner ${
+          menuOpen ? "max-h-[500px] py-4" : "max-h-0 py-0"
         }`}
       >
-        <div className="px-4 py-3">
+        <div className="px-4 space-y-3">
+
+          {/* Mobile Search */}
+          <form
+            onSubmit={handleSearch}
+            className="flex border rounded-lg overflow-hidden"
+          >
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-3 py-2 focus:outline-none"
+            />
+            <button className="bg-green-700 text-white px-3">
+              <Search size={18} />
+            </button>
+          </form>
+
+          {/* Mobile Nav */}
           <nav className="flex flex-col space-y-1">
             {links.map((link) => (
               <NavLink
@@ -109,8 +124,8 @@ export default function Header() {
                 to={link.path}
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
-                  `block text-gray-700 hover:text-green-700 py-2 ${
-                    isActive ? "text-green-800 font-semibold" : ""
+                  `block py-2 text-gray-700 hover:text-green-700 font-medium ${
+                    isActive ? "text-green-800" : ""
                   }`
                 }
               >
@@ -118,23 +133,6 @@ export default function Header() {
               </NavLink>
             ))}
           </nav>
-
-          {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="flex mt-3 w-full">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="bg-white border-l border-gray-300 px-3 rounded-r-lg flex items-center justify-center"
-            >
-              <Search size={18} color="#000" />
-            </button>
-          </form>
         </div>
       </div>
     </header>
