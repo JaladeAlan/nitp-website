@@ -5,8 +5,11 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { HelmetProvider } from "react-helmet-async"; 
+import { inject } from '@vercel/analytics';
 import "react-toastify/dist/ReactToastify.css";
 import "./styles/global.css";
+
+inject();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
