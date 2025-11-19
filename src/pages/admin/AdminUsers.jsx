@@ -9,31 +9,27 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [formData, setFormData] = useState({ name: "", email: "", role: "member" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "member" });
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   // Pagination states
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 20;
 
-  // Fetch users (with pagination)
+  // Fetch users from API
   const fetchUsers = async (pageNum = 1) => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/users/get_all.php?page=${pageNum}`);
-      if (res.data.success) {
-        setUsers(res.data.data || []);
-        setFiltered(res.data.data || []);
-        setTotalPages(res.data.pagination.pages);
-        setPage(res.data.pagination.page);
-      } else {
-        toast.error("Failed to fetch users");
-      }
+      const res = await api.get(`/admin/users?page=${pageNum}&per_page=20`);
+      const data = res.data;
+      setUsers(data.data || []);
+      setFiltered(data.data || []);
+      setPage(data.meta?.current_page || 1);
+      setTotalPages(data.meta?.last_page || 1);
     } catch (err) {
       console.error(err);
-      toast.error("Error fetching users");
+      toast.error("Failed to fetch users");
     } finally {
       setLoading(false);
     }
@@ -43,7 +39,7 @@ export default function AdminUsers() {
     fetchUsers(page);
   }, [page]);
 
-  // Filter users
+  // Filter users locally
   useEffect(() => {
     let result = users;
     if (search.trim()) {
@@ -59,14 +55,14 @@ export default function AdminUsers() {
     setFiltered(result);
   }, [search, roleFilter, users]);
 
-  // Modal open/close
+  // Open/close modal
   const openModal = (user = null) => {
     if (user) {
       setSelectedUser(user);
-      setFormData({ name: user.name, email: user.email, role: user.role });
+      setFormData({ name: user.name, email: user.email, role: user.role, password: "" });
     } else {
       setSelectedUser(null);
-      setFormData({ name: "", email: "", role: "member" });
+      setFormData({ name: "", email: "", password: "", role: "member" });
     }
     setShowModal(true);
   };
@@ -76,22 +72,28 @@ export default function AdminUsers() {
   // Save user
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.email || (!selectedUser && !formData.password)) {
+      return toast.error("Please fill all required fields");
+    }
+
     try {
-      const endpoint = selectedUser
-        ? "/admin/users/update.php"
-        : "/admin/users/create.php";
-      const res = await api.post(endpoint, { ...formData, id: selectedUser?.id });
+      const endpoint = selectedUser ? "/admin/users/update.php" : "/admin/users/create.php";
+      const payload = { ...formData };
+      if (selectedUser) payload.id = selectedUser.id;
+      if (selectedUser && !payload.password) delete payload.password; // do not update password if empty
+
+      const res = await api.post(endpoint, payload);
 
       if (res.data.success) {
         toast.success(res.data.message || "User saved successfully");
         setShowModal(false);
         fetchUsers(page);
       } else {
-        toast.error(res.data.message || "Error saving user");
+        toast.error(res.data.message || "Failed to save user");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save user");
+      toast.error("Error saving user");
     }
   };
 
@@ -222,7 +224,7 @@ export default function AdminUsers() {
               <tbody>
                 {filtered.map((u, i) => (
                   <tr key={u.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4">{(page - 1) * limit + i + 1}</td>
+                    <td className="py-3 px-4">{(page - 1) * 20 + i + 1}</td>
                     <td className="py-3 px-4">{u.name}</td>
                     <td className="py-3 px-4">{u.email}</td>
                     <td className="py-3 px-4 capitalize">{u.role}</td>
@@ -288,6 +290,21 @@ export default function AdminUsers() {
                   onChange={handleChange}
                   required
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Password field only for new user or optional on edit */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {selectedUser ? "Password (leave blank to keep current)" : "Password"}
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
+                  {...(!selectedUser && { required: true })}
                 />
               </div>
 

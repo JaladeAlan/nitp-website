@@ -11,13 +11,13 @@ export default function AdminPartners() {
   const [editing, setEditing] = useState(null);
   const [name, setName] = useState("");
   const [website, setWebsite] = useState("");
-  const [logo, setLogo] = useState("");
+  const [logoFile, setLogoFile] = useState(null); // New: File object
+  const [logoPreview, setLogoPreview] = useState(""); // For preview
   const [loading, setLoading] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   useEffect(() => {
     fetchPartners();
@@ -27,23 +27,27 @@ export default function AdminPartners() {
     handleSearch(search);
   }, [search, partners]);
 
+  // Fetch partners
   const fetchPartners = async () => {
     try {
-      const res = await api.get("/admin/partners/getAll.php");
-      setPartners(res.data || []);
-      setFiltered(res.data || []);
+      const res = await api.get("/admin/partners", { params: { per_page: 1000 } });
+      const items = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setPartners(items);
+      setFiltered(items);
     } catch (err) {
       toast.error("Failed to load partners");
       console.error(err);
+      setPartners([]);
+      setFiltered([]);
     }
   };
 
   const handleSearch = (query) => {
     const q = query.toLowerCase();
-    const filteredList = partners.filter(
+    const filteredList = (partners || []).filter(
       (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.website && p.website.toLowerCase().includes(q))
+        p.name?.toLowerCase().includes(q) ||
+        p.website?.toLowerCase().includes(q)
     );
     setFiltered(filteredList);
     setPage(1);
@@ -52,14 +56,16 @@ export default function AdminPartners() {
   const openModal = (partner = null) => {
     if (partner) {
       setEditing(partner);
-      setName(partner.name);
+      setName(partner.name || "");
       setWebsite(partner.website || "");
-      setLogo(partner.logo || "");
+      setLogoPreview(partner.logo || "");
+      setLogoFile(null);
     } else {
       setEditing(null);
       setName("");
       setWebsite("");
-      setLogo("");
+      setLogoPreview("");
+      setLogoFile(null);
     }
     setOpen(true);
   };
@@ -69,19 +75,19 @@ export default function AdminPartners() {
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("website", website);
+      if (logoFile) formData.append("logo", logoFile);
+
       if (editing) {
-        await api.post("/admin/partners/update.php", {
-          id: editing.id,
-          name,
-          website,
-          logo,
+        await api.post(`/admin/partners/${editing.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         toast.success("Partner updated!");
       } else {
-        await api.post("/admin/partners/create.php", {
-          name,
-          website,
-          logo,
+        await api.post("/admin/partners", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         toast.success("Partner added!");
       }
@@ -96,10 +102,9 @@ export default function AdminPartners() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this partner?")) return;
-
+    if (!confirm("Are you sure you want to delete this partner?")) return;
     try {
-      await api.post("/admin/partners/delete.php", { id });
+      await api.delete(`/admin/partners/${id}`);
       toast.success("Partner deleted!");
       fetchPartners();
     } catch (err) {
@@ -108,29 +113,23 @@ export default function AdminPartners() {
     }
   };
 
-  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = (filtered || []).slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-        <h2 className="text-2xl font-semibold text-green-800">Manage Partners</h2>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search partners..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition"
-          >
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Manage Partners</h2>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border rounded-lg px-3 py-2"
+          />
+          <button onClick={() => openModal()} className="bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
             <Plus size={18} /> Add Partner
           </button>
         </div>
@@ -144,37 +143,29 @@ export default function AdminPartners() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-green-700 text-white text-left">
-                <th className="py-3 px-4">#</th>
-                <th className="py-3 px-4">Name</th>
-                <th className="py-3 px-4">Website</th>
-                <th className="py-3 px-4">Logo</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="p-3">#</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">Website</th>
+                <th className="p-3">Logo</th>
+                <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginated.map((p, i) => (
                 <tr key={p.id} className="border-t hover:bg-gray-50">
-                  <td className="py-3 px-4">{(page - 1) * itemsPerPage + i + 1}</td>
-                  <td className="py-3 px-4">{p.name}</td>
-                  <td className="py-3 px-4">
-                    <a href={p.website} className="text-blue-600" target="_blank" rel="noreferrer">
-                      {p.website}
-                    </a>
+                  <td className="p-3">{(page - 1) * itemsPerPage + i + 1}</td>
+                  <td className="p-3">{p.name}</td>
+                  <td className="p-3">
+                    <a href={p.website} target="_blank" rel="noreferrer" className="text-blue-600">{p.website}</a>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="p-3">
                     {p.logo && <img src={p.logo} alt={p.name} className="w-12 h-12 object-contain" />}
                   </td>
-                  <td className="py-3 px-4 text-right flex justify-end gap-2">
-                    <button
-                      onClick={() => openModal(p)}
-                      className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg"
-                    >
+                  <td className="p-3 flex justify-end gap-2">
+                    <button onClick={() => openModal(p)} className="p-2 bg-blue-100 rounded-lg">
                       <Edit size={18} className="text-blue-600" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="p-2 bg-red-100 hover:bg-red-200 rounded-lg"
-                    >
+                    <button onClick={() => handleDelete(p.id)} className="p-2 bg-red-100 rounded-lg">
                       <Trash2 size={18} className="text-red-600" />
                     </button>
                   </td>
@@ -187,30 +178,12 @@ export default function AdminPartners() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-4 gap-2 flex-wrap">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
+        <div className="flex justify-center mt-4 gap-2">
+          <button disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</button>
           {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`px-3 py-1 border rounded ${page === i + 1 ? "bg-green-700 text-white" : ""}`}
-            >
-              {i + 1}
-            </button>
+            <button key={i} onClick={() => setPage(i + 1)} className={page === i + 1 ? "bg-green-700 text-white px-3 py-1 rounded" : "px-3 py-1 rounded"}>{i + 1}</button>
           ))}
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next
-          </button>
+          <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
         </div>
       )}
 
@@ -218,51 +191,32 @@ export default function AdminPartners() {
       {open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
-            <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-              onClick={() => setOpen(false)}
-            >
-              ✕
-            </button>
-            <h3 className="text-lg font-semibold mb-4">
-              {editing ? "Edit Partner" : "Add Partner"}
-            </h3>
-
+            <button onClick={() => setOpen(false)} className="absolute top-3 right-3 text-gray-500">✕</button>
+            <h3 className="text-lg font-semibold mb-4">{editing ? "Edit Partner" : "Add Partner"}</h3>
             <div className="space-y-4">
+              <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+              <input type="text" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+
+              {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <label className="block mb-1 text-sm font-medium">Logo</label>
+                {logoPreview && (
+                  <img src={logoPreview} alt="preview" className="w-20 h-20 object-contain mb-2" />
+                )}
                 <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Website</label>
-                <input
-                  type="text"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Logo URL</label>
-                <input
-                  type="text"
-                  value={logo}
-                  onChange={(e) => setLogo(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    setLogoFile(file);
+                    setLogoPreview(URL.createObjectURL(file));
+                  }}
+                  className="w-full border rounded-lg px-3 py-2"
                 />
               </div>
 
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 transition"
-              >
-                {editing ? "Update Partner" : "Add Partner"}
+              <button onClick={handleSave} disabled={loading} className="w-full bg-green-700 text-white py-2 rounded-lg">
+                {editing ? "Update" : "Add"} Partner
               </button>
             </div>
           </div>

@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Users, FileText, Calendar, Layers, BookOpen, Image, Users as PartnersIcon } from "lucide-react";
+import { 
+  Users, 
+  FileText, 
+  Calendar, 
+  Layers, 
+  BookOpen, 
+  Image, 
+  Users as PartnersIcon 
+} from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -21,8 +29,11 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await api.get("/admin/dashboard/stats.php");
-      if (res.data) setStats(res.data);
+      const res = await api.get("/admin/dashboard/stats");
+      // Use res.data.data to get the stats object
+      if (res.data?.data) {
+        setStats(res.data.data);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to load dashboard stats");
@@ -42,7 +53,9 @@ export default function AdminDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-green-800 mb-6">Admin Dashboard</h1>
-      <p className="text-gray-600 mb-8">Overview of your site’s content and user statistics.</p>
+      <p className="text-gray-600 mb-8">
+        Overview of your site’s content and user statistics.
+      </p>
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {cards.map((card) => (

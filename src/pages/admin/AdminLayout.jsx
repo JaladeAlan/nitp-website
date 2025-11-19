@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 export default function AdminLayout() {
+  const navigate = useNavigate();
+
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
     { name: "Users", icon: Users, path: "/admin/users" },
@@ -26,7 +28,7 @@ export default function AdminLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/admin/login";
+    navigate("/admin/login", { replace: true }); // 👈 no reload, safe redirect
   };
 
   return (
@@ -36,6 +38,7 @@ export default function AdminLayout() {
         <h1 className="text-xl font-bold text-blue-800 mb-6 border-b pb-3">
           Admin Panel
         </h1>
+
         <nav className="flex-1 space-y-1">
           {menuItems.map(({ name, icon: Icon, path }) => (
             <NavLink
@@ -54,6 +57,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg mt-auto"

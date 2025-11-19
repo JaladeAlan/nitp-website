@@ -12,26 +12,29 @@ export default function AdminResources() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [link, setLink] = useState("");
+  const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetchResources();
-  }, []);
+    fetchResources(page);
+  }, [page]);
 
   useEffect(() => {
     handleSearch(search);
   }, [search, resources]);
 
-  const fetchResources = async () => {
+  const fetchResources = async (pageNumber = 1) => {
     try {
-      const res = await api.get("/admin/resources/getAll.php");
-      setResources(res.data || []);
-      setFiltered(res.data || []);
+      const res = await api.get(`/admin/resources?per_page=${itemsPerPage}&page=${pageNumber}`);
+      const data = res.data.data || [];
+      setResources(data);
+      setFiltered(data);
+      setLastPage(res.data.meta.last_page || 1);
     } catch (err) {
       toast.error("Failed to load resources");
       console.error(err);
@@ -43,40 +46,50 @@ export default function AdminResources() {
     const filteredList = resources.filter(
       (r) =>
         r.title.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q) ||
         r.description.toLowerCase().includes(q)
     );
     setFiltered(filteredList);
     setPage(1);
   };
 
+  const resetForm = () => {
+    setEditing(null);
+    setTitle("");
+    setDescription("");
+    setFile(null);
+    setFilePreview("");
+  };
+
   const handleSave = async () => {
-    if (!title.trim() || !category.trim() || !description.trim())
-      return toast.error("All fields required");
+    if (!title.trim() || !description.trim())
+      return toast.error("Title and description are required");
+
+    if (!editing && !file) return toast.error("File is required");
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      if (file) formData.append("file", file);
+
       if (editing) {
-        await api.post("/admin/resources/update.php", {
-          id: editing.id,
-          title,
-          category,
-          description,
-          link,
+        // Update resource (PUT request)
+        await api.post(`/admin/resources/${editing.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         toast.success("Resource updated!");
       } else {
-        await api.post("/admin/resources/create.php", {
-          title,
-          category,
-          description,
-          link,
+        // Create new resource
+        await api.post("/admin/resources", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         toast.success("Resource added!");
       }
+
       setOpen(false);
       resetForm();
-      fetchResources();
+      fetchResources(page);
     } catch (err) {
       toast.error("Failed to save resource");
       console.error(err);
@@ -88,26 +101,14 @@ export default function AdminResources() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this resource?")) return;
     try {
-      await api.post("/admin/resources/delete.php", { id });
-      toast.success("Deleted!");
-      fetchResources();
+      await api.delete(`/admin/resources/${id}`);
+      toast.success("Resource deleted!");
+      fetchResources(page);
     } catch (err) {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete resource");
       console.error(err);
     }
   };
-
-  const resetForm = () => {
-    setEditing(null);
-    setTitle("");
-    setCategory("");
-    setDescription("");
-    setLink("");
-  };
-
-  const startIndex = (page - 1) * itemsPerPage;
-  const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   return (
     <div className="p-6">
@@ -138,31 +139,29 @@ export default function AdminResources() {
             <tr className="bg-gray-100 text-left text-sm font-semibold">
               <th className="p-3">#</th>
               <th className="p-3">Title</th>
-              <th className="p-3">Category</th>
               <th className="p-3">Description</th>
-              <th className="p-3">Link</th>
+              <th className="p-3">File</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {paginated.length > 0 ? (
-              paginated.map((item, i) => (
+            {filtered.length > 0 ? (
+              filtered.map((item, i) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{startIndex + i + 1}</td>
+                  <td className="p-3">{i + 1}</td>
                   <td className="p-3 font-medium">{item.title}</td>
-                  <td className="p-3">{item.category}</td>
                   <td className="p-3 text-gray-600 truncate max-w-sm">
                     {item.description.slice(0, 100)}...
                   </td>
                   <td className="p-3 text-blue-600">
-                    {item.link ? (
+                    {item.file ? (
                       <a
-                        href={item.link}
+                        href={`http://localhost:8000/storage/${item.file}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:underline"
                       >
-                        View
+                        Download
                       </a>
                     ) : (
                       "—"
@@ -174,9 +173,9 @@ export default function AdminResources() {
                       onClick={() => {
                         setEditing(item);
                         setTitle(item.title);
-                        setCategory(item.category);
                         setDescription(item.description);
-                        setLink(item.link || "");
+                        setFile(null);
+                        setFilePreview("");
                         setOpen(true);
                       }}
                     >
@@ -193,7 +192,7 @@ export default function AdminResources() {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center p-6 text-gray-500">
+                <td colSpan="5" className="text-center p-6 text-gray-500">
                   No resources found
                 </td>
               </tr>
@@ -212,19 +211,19 @@ export default function AdminResources() {
           Prev
         </Button>
         <span className="px-3 py-2 text-sm text-gray-700">
-          Page {page} of {totalPages || 1}
+          Page {page} of {lastPage || 1}
         </span>
         <Button
           variant="outline"
           onClick={() => setPage(page + 1)}
-          disabled={page === totalPages}
+          disabled={page === lastPage}
         >
           Next
         </Button>
       </div>
 
       {/* Modal */}
-      <Dialog isOpen={open} onClose={() => setOpen(false)}>
+      <Dialog isOpen={open} onClose={() => { setOpen(false); resetForm(); }}>
         <div className="space-y-3">
           <h3 className="text-lg font-bold">
             {editing ? "Edit Resource" : "Add Resource"}
@@ -237,34 +236,30 @@ export default function AdminResources() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <input
-            type="text"
-            placeholder="Category"
-            className="border rounded-lg w-full p-2"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          />
+
           <textarea
             placeholder="Description"
             className="border rounded-lg w-full p-2 h-32"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+
           <input
-            type="text"
-            placeholder="Optional link (PDF, website, etc.)"
+            type="file"
+            accept=".pdf,.doc,.docx,.ppt,.pptx"
             className="border rounded-lg w-full p-2"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
+            onChange={(e) => {
+              const f = e.target.files[0];
+              setFile(f);
+              if (f) setFilePreview(f.name);
+            }}
           />
+          {filePreview && <p className="text-sm text-gray-600">{filePreview}</p>}
 
           <div className="flex justify-end gap-2 mt-2">
             <Button
               variant="outline"
-              onClick={() => {
-                setOpen(false);
-                resetForm();
-              }}
+              onClick={() => { setOpen(false); resetForm(); }}
             >
               Cancel
             </Button>

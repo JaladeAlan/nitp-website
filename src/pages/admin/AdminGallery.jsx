@@ -1,71 +1,183 @@
 import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import AdminModal from "./AdminModal";
 
 export default function AdminGallery() {
   const [galleryItems, setGalleryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [deletePending, setDeletePending] = useState(null);
 
   const galleryFields = [
     { name: "title", label: "Title", type: "text", placeholder: "Enter title" },
-    { name: "image", label: "Image", type: "file" }
+    { name: "caption", label: "Caption", type: "text", placeholder: "Enter caption" },
+    { name: "image", label: "Image", type: "file" },
   ];
 
-  const handleAdd = () => {
+  useEffect(() => {
+    fetchGallery();
+  }, []);
+
+  const fetchGallery = async () => {
+    setLoading(true);
+
+    try {
+      const res = await api.get("/admin/gallery");
+      setGalleryItems(res.data?.data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load gallery items");
+      toast.error("Failed to load gallery items");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openAddModal = () => {
     setSelectedImage(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (item) => {
+  const openEditModal = (item) => {
     setSelectedImage(item);
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (data) => {
-    if (selectedImage) {
-      // Update existing item
-      setGalleryItems((prev) =>
-        prev.map((item) => (item.id === selectedImage.id ? { ...item, ...data } : item))
-      );
-    } else {
-      // Add new item
-      setGalleryItems((prev) => [...prev, { id: Date.now(), ...data }]);
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/admin/gallery/${id}`);
+
+      setGalleryItems((prev) => prev.filter((item) => item.id !== id));
+      setDeletePending(null);
+
+      toast.success("Gallery item deleted successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete gallery item");
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id) => {
-    setGalleryItems((prev) => prev.filter((item) => item.id !== id));
+  const handleSubmit = async (data) => {
+    try {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+
+      let res;
+
+      if (selectedImage) {
+        // Update
+        res = await api.post(`/admin/gallery/${selectedImage.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        setGalleryItems((prev) =>
+          prev.map((item) =>
+            item.id === selectedImage.id ? res.data.data : item
+          )
+        );
+
+        toast.success("Gallery item updated");
+      } else {
+        // Create
+        res = await api.post("/admin/gallery", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        setGalleryItems((prev) => [res.data.data, ...prev]);
+        toast.success("Gallery item added");
+      }
+
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save gallery item");
+    }
   };
+
+  if (loading) return <p className="text-center py-4 text-gray-500">Loading gallery...</p>;
+  if (error) return <p className="text-center py-4 text-red-500">{error}</p>;
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold">Gallery</h2>
+
         <button
-          onClick={handleAdd}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          onClick={openAddModal}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
         >
           Add Image
         </button>
       </div>
 
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {/* Gallery Grid */}
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
         {galleryItems.map((item) => (
-          <div key={item.id} className="border p-2 rounded shadow relative">
+          <div key={item.id} className="border p-3 rounded shadow-sm relative">
+
             {item.image && (
-              <img src={item.image instanceof File ? URL.createObjectURL(item.image) : item.image} 
-                   alt={item.title} className="w-full h-48 object-cover rounded mb-2" />
+              <img
+                src={
+                  item.image.startsWith("http")
+                    ? item.image
+                    : `${import.meta.env.VITE_API_URL}/storage/${item.image}`
+                }
+                alt={item.title}
+                className="w-full h-48 object-cover rounded mb-3"
+              />
             )}
-            <h3 className="font-semibold">{item.title}</h3>
-            <div className="flex justify-end gap-2 mt-2">
-              <button onClick={() => handleEdit(item)} className="text-blue-600">Edit</button>
-              <button onClick={() => handleDelete(item.id)} className="text-red-600">Delete</button>
+
+            <h3 className="font-semibold mb-1">{item.title}</h3>
+            {item.caption && (
+              <p className="text-sm text-gray-600 mb-2">{item.caption}</p>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 mt-3 text-sm">
+              <button
+                onClick={() => openEditModal(item)}
+                className="text-blue-600 hover:underline"
+              >
+                Edit
+              </button>
+
+              {deletePending === item.id ? (
+                <>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-600 font-semibold"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setDeletePending(null)}
+                    className="text-gray-600 hover:underline"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setDeletePending(item.id)}
+                  className="text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
 
+      {/* Modal */}
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
