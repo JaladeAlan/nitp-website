@@ -1,12 +1,32 @@
+import { useEffect, useState } from "react";
 import SEOWrapper from "../components/common/SEOWrapper";
 import ProjectCard from "../components/projects/ProjectCard";
-import ProjectMap from "../components/projects/ProjectMap";
+import api from "../services/api";
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await api.get("/projects"); 
+        // Only published projects
+        const publishedProjects = res.data?.data.filter(p => p.published);
+        setProjects(publishedProjects || []);
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
   return (
     <SEOWrapper
       title="Projects & Initiatives | NITP Oyo State Chapter"
-      description="Explore ongoing and completed town planning projects and initiatives across Oyo State with the Nigerian Institute of Town Planners."
+      description="Explore ongoing and completed town planning projects and initiatives across Oyo State."
       image="/assets/projects-hero.jpg"
       baseUrl="https://nitp-oyo.org"
     >
@@ -16,14 +36,24 @@ export default function ProjectsPage() {
           Explore ongoing and completed planning initiatives across Oyo State.
         </p>
 
-        {/* Map of Projects */}
-        <ProjectMap />
-
-        {/* Project Cards */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProjectCard />
-          <ProjectCard />
-        </div>
+        {loading ? (
+          <p className="text-center text-gray-500 mt-8">Loading projects...</p>
+        ) : projects.length === 0 ? (
+          <p className="text-center text-gray-500 mt-8">No projects available.</p>
+        ) : (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                title={project.title}
+                description={project.summary || project.body}
+                location={project.location || "Oyo State"}
+                image={project.cover || "/assets/projects-hero.jpg"}
+                status={project.published ? "Ongoing" : "Upcoming"}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </SEOWrapper>
   );

@@ -1,6 +1,39 @@
+import { useState } from "react";
 import SEOWrapper from "../components/common/SEOWrapper";
+import api from "../services/api"; 
 
 export default function ContactPage() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    message: ""
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setSuccess("");
+    setError("");
+
+    try {
+      const res = await api.post("/contact", form);
+      setSuccess("Message sent successfully!");
+      setForm({ name: "", email: "", message: "" });
+    } catch (err) {
+      setError("Failed to send message.");
+    }
+
+    setLoading(false);
+  };
+
   return (
     <SEOWrapper
       title="Contact NITP Oyo State Chapter | Get in Touch"
@@ -9,36 +42,47 @@ export default function ContactPage() {
       baseUrl="https://nitp-oyo.org"
     >
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-green-700 mb-2">Contact Us</h1>
-          <p className="text-gray-700 text-lg">
-            Reach out to the Nigerian Institute of Town Planners, Oyo State Chapter.
-          </p>
-        </div>
 
-        {/* Contact Form */}
-        <form className="bg-white shadow-md rounded-xl p-6 space-y-4">
+        {success && <p className="text-green-600 mb-4">{success}</p>}
+        {error && <p className="text-red-600 mb-4">{error}</p>}
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-md rounded-xl p-6 space-y-4"
+        >
           <input
             type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
             placeholder="Your Name"
-            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+            className="w-full border border-gray-300 p-3 rounded-lg"
           />
+
           <input
             type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
             placeholder="Email Address"
-            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+            className="w-full border border-gray-300 p-3 rounded-lg"
           />
+
           <textarea
+            name="message"
+            value={form.message}
+            onChange={handleChange}
             placeholder="Your Message"
             rows="5"
-            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+            className="w-full border border-gray-300 p-3 rounded-lg"
           ></textarea>
+
           <button
             type="submit"
-            className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            disabled={loading}
+            className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-lg font-semibold"
           >
-            Send Message
+            {loading ? "Sending..." : "Send Message"}
           </button>
         </form>
       </div>
