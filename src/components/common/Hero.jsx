@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Hero() {
   return (
     <section
@@ -16,12 +18,18 @@ export default function Hero() {
           Advancing Sustainable Planning and Development in Oyo State.
         </p>
         <div className="space-x-4">
-          <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-lg transition">
+          <Link
+            to="/membership"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-lg transition"
+          >
             Join NITP
-          </button>
-          <button className="bg-transparent border border-white hover:bg-white hover:text-green-700 px-6 py-3 rounded-lg transition">
+          </Link>
+          <Link
+            to="/about"
+            className="bg-white text-green-700 font-semibold px-6 py-3 rounded-lg transition hover:bg-green-700 hover:text-white"
+          >
             Learn More
-          </button>
+          </Link>
         </div>
       </div>
     </section>

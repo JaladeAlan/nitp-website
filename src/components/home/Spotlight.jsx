@@ -29,9 +29,6 @@ export default function Spotlight() {
           </h3>
           <p className="text-yellow-600 font-medium mb-4">{spotlight.role}</p>
           <p className="text-gray-600 italic mb-6">“{spotlight.quote}”</p>
-          <button className="bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-2 rounded-lg">
-            Read Full Story
-          </button>
         </div>
       </div>
     </section>

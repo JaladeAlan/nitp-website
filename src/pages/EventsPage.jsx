@@ -15,7 +15,7 @@ const EventsPage = () => {
       <div className="max-w-6xl mx-auto px-6">
         {/* Upcoming Events */}
         <section className="mt-0 mb-10">
-        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
+        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center pt-8">
           Upcoming Events
         </h2>
         <EventCalendar showUpcoming={true} />
