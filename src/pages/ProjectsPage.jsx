@@ -50,6 +50,7 @@ export default function ProjectsPage() {
                 location={project.location || "Oyo State"}
                 image={project.cover || "/assets/projects-hero.jpg"}
                 status={project.published ? "Ongoing" : "Upcoming"}
+                link={`/projects/${project.id}`} 
               />
             ))}
           </div>

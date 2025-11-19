@@ -7,6 +7,7 @@ import Header from "./components/common/Header";
 import Footer from "./components/common/Footer";
 import ScrollToTop from "./components/common/ScrollToTop";
 import SEOWrapper from "./components/common/SEOWrapper";
+import SearchResults from "./components/common/SearchResults";
 
 // Public Pages
 import HomePage from "./pages/HomePage";
@@ -22,6 +23,7 @@ import PartnersPage from "./pages/PartnersPage";
 import ContactPage from "./pages/ContactPage";
 import NewsSingle from "./pages/NewsSingle";
 import EventSingle from "./pages/EventSingle";
+import ProjectsSingle from "./pages/ProjectsSingle";
 
 // Auth Pages
 import LoginPage from "./pages/auth/LoginPage";
@@ -101,12 +103,24 @@ export default function AppRouter() {
         />
       ))}
 
+      {/* Searc h */}
+      <Route path="/search" element={<SearchResults />} />
+
       {/* Single News Article */}
       <Route
         path="/news/:id"
         element={
           <Layout>
             <NewsSingle />
+          </Layout>
+        }
+      />
+      {/* Single Project */}
+      <Route
+        path="/projects/:id"
+        element={
+          <Layout>
+            <ProjectsSingle />
           </Layout>
         }
       />
