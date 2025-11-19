@@ -156,7 +156,7 @@ export default function AdminResources() {
                   <td className="p-3 text-blue-600">
                     {item.file ? (
                       <a
-                        href={`http://localhost:8000/storage/${item.file}`}
+                        href={`${item.file}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:underline"

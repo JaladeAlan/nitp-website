@@ -1,274 +1,214 @@
-import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, X } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "member" });
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Pagination states
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
 
-  // Fetch users from API
-  const fetchUsers = async (pageNum = 1) => {
-    setLoading(true);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "member",
+  });
+
+  const [errors, setErrors] = useState({});
+
+  // Fetch users
+  const fetchUsers = async () => {
     try {
-      const res = await api.get(`/admin/users?page=${pageNum}&per_page=20`);
-      const data = res.data;
-      setUsers(data.data || []);
-      setFiltered(data.data || []);
-      setPage(data.meta?.current_page || 1);
-      setTotalPages(data.meta?.last_page || 1);
+      setLoading(true);
+      const res = await api.get("/admin/users");
+      setUsers(res.data.data || []);
+      setFiltered(res.data.data || []);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch users");
+      toast.error(err?.response?.data?.message || "Failed to load users");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers(page);
-  }, [page]);
+    fetchUsers();
+  }, []);
 
-  // Filter users locally
+  // Typeahead search
   useEffect(() => {
-    let result = users;
-    if (search.trim()) {
-      result = result.filter(
+    const q = search.toLowerCase();
+    setFiltered(
+      users.filter(
         (u) =>
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.email?.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    if (roleFilter !== "all") {
-      result = result.filter((u) => u.role === roleFilter);
-    }
-    setFiltered(result);
-  }, [search, roleFilter, users]);
+          u.name.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          u.role.toLowerCase().includes(q)
+      )
+    );
+  }, [search, users]);
 
-  // Open/close modal
   const openModal = (user = null) => {
-    if (user) {
-      setSelectedUser(user);
-      setFormData({ name: user.name, email: user.email, role: user.role, password: "" });
-    } else {
-      setSelectedUser(null);
-      setFormData({ name: "", email: "", password: "", role: "member" });
-    }
+    setSelectedUser(user);
+    setFormData(
+      user
+        ? { name: user.name, email: user.email, password: "", role: user.role }
+        : { name: "", email: "", password: "", role: "member" }
+    );
+    setErrors({});
     setShowModal(true);
   };
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedUser(null);
+    setErrors({});
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: null });
+  };
 
   // Save user
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || (!selectedUser && !formData.password)) {
-      return toast.error("Please fill all required fields");
-    }
+    setErrors({});
+    setSaving(true);
+
+    const payload = { ...formData };
+    if (!payload.password) delete payload.password;
 
     try {
-      const endpoint = selectedUser ? "/admin/users/update.php" : "/admin/users/create.php";
-      const payload = { ...formData };
-      if (selectedUser) payload.id = selectedUser.id;
-      if (selectedUser && !payload.password) delete payload.password; // do not update password if empty
-
-      const res = await api.post(endpoint, payload);
-
-      if (res.data.success) {
-        toast.success(res.data.message || "User saved successfully");
-        setShowModal(false);
-        fetchUsers(page);
+      if (selectedUser) {
+        await api.put(`/admin/users/${selectedUser.id}`, payload);
+        toast.success("User updated");
       } else {
-        toast.error(res.data.message || "Failed to save user");
+        await api.post("/admin/users/create", payload);
+        toast.success("User created");
       }
+      fetchUsers();
+      closeModal();
     } catch (err) {
-      console.error(err);
-      toast.error("Error saving user");
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+        toast.error("Validation failed");
+      } else {
+        toast.error(err.response?.data?.message || "Action failed");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Delete user
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+  const openDeleteModal = (user) => {
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete) return;
     try {
-      const res = await api.post("/admin/users/delete.php", { id });
-      if (res.data.success) {
-        toast.success("User deleted");
-        fetchUsers(page);
-      } else {
-        toast.error("Failed to delete user");
-      }
+      setDeleting(true);
+      await api.delete(`/admin/users/${userToDelete.id}`);
+      toast.success("User deleted");
+      fetchUsers();
+      setShowDeleteModal(false);
+      setUserToDelete(null);
     } catch (err) {
-      console.error(err);
-      toast.error("Error deleting user");
+      toast.error(err.response?.data?.message || "Failed to delete");
+    } finally {
+      setDeleting(false);
     }
-  };
-
-  // Pagination helpers
-  const changePage = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
-  };
-
-  const renderPagination = () => {
-    const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, page - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
-
-    for (let i = start; i <= end; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => changePage(i)}
-          className={`px-3 py-1 rounded-lg ${
-            i === page ? "bg-green-700 text-white" : "bg-gray-100 hover:bg-gray-200"
-          }`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-center gap-2 mt-6">
-        <button
-          onClick={() => changePage(page - 1)}
-          disabled={page <= 1}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-        >
-          <ChevronLeft size={18} />
-        </button>
-
-        {pages}
-
-        <button
-          onClick={() => changePage(page + 1)}
-          disabled={page >= totalPages}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-        >
-          <ChevronRight size={18} />
-        </button>
-      </div>
-    );
   };
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h2 className="text-2xl font-semibold text-green-800">Manage Users</h2>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-
-          {/* Role Filter */}
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
-          >
-            <option value="all">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
-          </select>
-
-          {/* Add Button */}
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition"
-          >
-            <Plus size={18} /> Add User
-          </button>
-        </div>
+    <div className="p-6 space-y-6">
+      {/* Header + Search */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Manage Users</h2>
+        <button
+          className="bg-green-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-800 transition"
+          onClick={() => openModal()}
+        >
+          <Plus size={16} className="mr-1" /> Add User
+        </button>
       </div>
 
-      {/* Users Table */}
-      <div className="overflow-x-auto bg-white shadow rounded-lg">
+      <div className="relative mb-4">
+        <input
+          type="text"
+          placeholder="Search by name, email or role..."
+          className="border rounded-lg w-full p-2"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
         {loading ? (
           <p className="p-6 text-center text-gray-500">Loading users...</p>
         ) : filtered.length === 0 ? (
-          <p className="p-6 text-center text-gray-500">No matching users found</p>
+          <p className="p-6 text-center text-gray-500">No users found</p>
         ) : (
-          <>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-green-700 text-white text-left">
-                  <th className="py-3 px-4">#</th>
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4">Role</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-100 text-sm font-semibold">
+              <tr>
+                <th className="p-3 border">ID</th>
+                <th className="p-3 border">Name</th>
+                <th className="p-3 border">Email</th>
+                <th className="p-3 border">Role</th>
+                <th className="p-3 border">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 transition">
+                  <td className="p-3 border">{user.id}</td>
+                  <td className="p-3 border">{user.name}</td>
+                  <td className="p-3 border">{user.email}</td>
+                  <td className="p-3 border">{user.role}</td>
+                  <td className="p-3 border flex gap-2">
+                    <button
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => openModal(user)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className={`text-red-600 hover:text-red-800 ${deleting && userToDelete?.id === user.id ? "opacity-50 cursor-not-allowed" : ""}`}
+                      onClick={() => openDeleteModal(user)}
+                      disabled={deleting && userToDelete?.id === user.id}
+                    >
+                      {deleting && userToDelete?.id === user.id ? "Deleting..." : <Trash2 size={16} />}
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((u, i) => (
-                  <tr key={u.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4">{(page - 1) * 20 + i + 1}</td>
-                    <td className="py-3 px-4">{u.name}</td>
-                    <td className="py-3 px-4">{u.email}</td>
-                    <td className="py-3 px-4 capitalize">{u.role}</td>
-                    <td className="py-3 px-4 text-right flex justify-end gap-2">
-                      <button
-                        onClick={() => openModal(u)}
-                        className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg"
-                      >
-                        <Edit size={18} className="text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        className="p-2 bg-red-100 hover:bg-red-200 rounded-lg"
-                      >
-                        <Trash2 size={18} className="text-red-600" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            {renderPagination()}
-          </>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
-            <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowModal(false)}
-            >
+          <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-lg">
+            <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-700" onClick={closeModal}>
               <X size={20} />
             </button>
+            <h3 className="text-lg font-semibold mb-4">{selectedUser ? "Edit User" : "Add User"}</h3>
 
-            <h3 className="text-lg font-semibold mb-4">
-              {selectedUser ? "Edit User" : "Add New User"}
-            </h3>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-medium mb-1">Name</label>
                 <input
@@ -276,9 +216,9 @@ export default function AdminUsers() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
                 />
+                {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name[0]}</p>}
               </div>
 
               <div>
@@ -288,12 +228,11 @@ export default function AdminUsers() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
                 />
+                {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email[0]}</p>}
               </div>
 
-              {/* Password field only for new user or optional on edit */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   {selectedUser ? "Password (leave blank to keep current)" : "Password"}
@@ -306,6 +245,7 @@ export default function AdminUsers() {
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500"
                   {...(!selectedUser && { required: true })}
                 />
+                {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password[0]}</p>}
               </div>
 
               <div>
@@ -319,15 +259,43 @@ export default function AdminUsers() {
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
                 </select>
+                {errors.role && <p className="text-red-600 text-sm mt-1">{errors.role[0]}</p>}
               </div>
 
               <button
                 type="submit"
+                disabled={saving}
                 className="w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 transition"
               >
-                {selectedUser ? "Update User" : "Add User"}
+                {saving ? "Saving..." : selectedUser ? "Update User" : "Add User"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-lg text-center">
+            <h3 className="text-lg font-semibold mb-4 text-red-600">Confirm Delete</h3>
+            <p className="mb-6">Are you sure you want to delete <strong>{userToDelete?.name}</strong>?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex-1"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition flex-1"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
