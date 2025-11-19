@@ -20,6 +20,8 @@ import YPFPage from "./pages/YPFPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import PartnersPage from "./pages/PartnersPage";
 import ContactPage from "./pages/ContactPage";
+import NewsSingle from "./pages/NewsSingle";
+import EventSingle from "./pages/EventSingle";
 
 // Auth Pages
 import LoginPage from "./pages/auth/LoginPage";
@@ -98,6 +100,25 @@ export default function AppRouter() {
           }
         />
       ))}
+
+      {/* Single News Article */}
+      <Route
+        path="/news/:id"
+        element={
+          <Layout>
+            <NewsSingle />
+          </Layout>
+        }
+      />
+
+      <Route
+      path="/events/:id"
+      element={
+        <Layout>
+          <EventSingle />
+        </Layout>
+      }
+      />
 
       {/* Auth Routes */}
       <Route path="/login" element={<LoginPage />} />

@@ -15,20 +15,18 @@ const EventsPage = () => {
       <div className="max-w-6xl mx-auto px-6">
         {/* Upcoming Events */}
         <section className="mt-0 mb-10">
-          <EventCalendar className="mt-0" />
-        </section>
+        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
+          Upcoming Events
+        </h2>
+        <EventCalendar showUpcoming={true} />
+      </section>
 
-        {/* Past Events */}
-        <section className="bg-gray-50 shadow-inner rounded-xl p-8 md:p-12 mb-10">
-          <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
-            Past Events
-          </h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <EventCard />
-            <EventCard />
-            <EventCard />
-          </div>
-        </section>
+      <section className="bg-gray-50 shadow-inner rounded-xl p-8 md:p-12 mb-10">
+        <h2 className="text-3xl font-semibold text-green-700 mb-6 text-center">
+          Past Events
+        </h2>
+        <EventCalendar showUpcoming={false} />
+      </section>
 
         {/* Event Gallery */}
         <section className="bg-white shadow-md rounded-xl p-8 md:p-12 mb-16">
